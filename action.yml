@@ -3,9 +3,7 @@ description: "The uncompromising Python code formatter."
 author: "Łukasz Langa and contributors to Black"
 inputs:
   options:
-    description:
-      "Options passed to Black. Use `black --help` to see available options. Default:
-      '--check --diff'"
+    description: "Options passed to Black. Use `black --help` to see available options. Default: '--check --diff'"
     required: false
     default: "--check --diff"
   src:
@@ -13,16 +11,14 @@ inputs:
     required: false
     default: "."
   jupyter:
-    description:
-      "Set this option to true to include Jupyter Notebook files. Default: false"
+    description: "Set this option to true to include Jupyter Notebook files. Default: false"
     required: false
     default: false
   black_args:
     description: "[DEPRECATED] Black input arguments."
     required: false
     default: ""
-    deprecationMessage:
-      "Input `with.black_args` is deprecated. Use `with.options` and `with.src` instead."
+    deprecationMessage: "Input `with.black_args` is deprecated. Use `with.options` and `with.src` instead."
   version:
     description: 'Python Version specifier (PEP440) - e.g. "21.5b1"'
     required: false
@@ -37,8 +33,8 @@ inputs:
     default: true
   output-file:
     description: >
-      Optional path to write Black output to a file in addition to stdout. Useful for
-      keeping GitHub Actions logs clean when using --diff or --check.
+      Optional path to write Black output to a file in addition to stdout. Useful for keeping GitHub Actions logs clean when using --diff or --check.
+
     required: false
     default: ""
 branding:
@@ -47,6 +43,23 @@ branding:
 runs:
   using: composite
   steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: black
       run: |
         # Even when black fails, do not close the shell
