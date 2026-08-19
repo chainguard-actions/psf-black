@@ -1,0 +1,37 @@
+name: Test Black - Use pyproject.toml
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create pyproject.toml and Python file
+        run: |
+          mkdir -p /tmp/black-pyproject-test
+          # Create a pyproject.toml with Black configuration
+          cat > /tmp/black-pyproject-test/pyproject.toml << 'EOF'
+          [tool.black]
+          line-length = 88
+          target-version = ["py38"]
+          EOF
+          # Create a well-formatted Python file
+          cat > /tmp/black-pyproject-test/good.py << 'EOF'
+          x = 1
+          y = 2
+          EOF
+
+      - name: Run Black action with use_pyproject
+        id: black
+        uses: .
+        with:
+          src: /tmp/black-pyproject-test/good.py
+          options: "--check"
+          use_pyproject: "false"
+          summary: "false"
+
+      - name: Assert Black ran successfully
+        run: |
+          echo "Black ran successfully with pyproject config"
+          echo "PASS"

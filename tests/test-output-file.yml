@@ -1,0 +1,41 @@
+name: Test Black - output-file feature
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create poorly-formatted Python file
+        run: |
+          mkdir -p /tmp/black-test-output
+          # Write Python code that is not Black-formatted so diff output is generated
+          printf 'x=1\ny=2\nz=x+y\n' > /tmp/black-test-output/bad.py
+
+      - name: Run Black with output-file
+        id: black
+        uses: .
+        with:
+          options: "--check --diff"
+          src: "/tmp/black-test-output"
+          version: "25.1.0"
+          summary: "false"
+          output-file: "/tmp/black-output.txt"
+        continue-on-error: true
+
+      - name: Assert output file was created and contains content
+        run: |
+          echo "Checking output file exists..."
+          if [ ! -f "/tmp/black-output.txt" ]; then
+            echo "FAIL: output file /tmp/black-output.txt was not created"
+            exit 1
+          fi
+          echo "Output file contents:"
+          cat /tmp/black-output.txt
+          CONTENT=$(cat /tmp/black-output.txt)
+          if [ -z "$CONTENT" ]; then
+            echo "FAIL: output file is empty, expected diff content"
+            exit 1
+          fi
+          echo "PASS: output file was created with content"

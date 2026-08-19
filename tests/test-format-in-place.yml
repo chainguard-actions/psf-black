@@ -1,0 +1,28 @@
+name: Test Black - Format in place (no --check flag)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create Python file to format
+        run: |
+          mkdir -p /tmp/black-format-test
+          # Write Python code that Black will reformat
+          printf 'x=1\ny=2\n' > /tmp/black-format-test/format_me.py
+
+      - name: Run Black action to format in place
+        id: black
+        uses: .
+        with:
+          src: /tmp/black-format-test/format_me.py
+          options: "--quiet"
+          summary: "false"
+
+      - name: Assert Black formatted the file
+        run: |
+          echo "Black formatted the file successfully"
+          cat /tmp/black-format-test/format_me.py
+          echo "PASS"

@@ -1,0 +1,35 @@
+name: Test Black - poorly-formatted code fails check
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create poorly-formatted Python file
+        run: |
+          mkdir -p /tmp/black-test-fail
+          # Write Python code that is not Black-formatted (bad spacing, etc.)
+          printf 'x=1\ny=2\nz=x+y\n' > /tmp/black-test-fail/bad.py
+
+      - name: Run Black check on poorly-formatted code (expected to fail)
+        id: black
+        uses: .
+        with:
+          options: "--check"
+          src: "/tmp/black-test-fail"
+          version: "25.1.0"
+          summary: "false"
+        continue-on-error: true
+
+      - name: Assert Black failed as expected
+        env:
+          OUTCOME: ${{ steps.black.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected Black to fail on poorly-formatted code, but outcome was '$OUTCOME'"
+            exit 1
+          fi
+          echo "PASS: Black correctly failed on poorly-formatted code"
