@@ -1,0 +1,30 @@
+name: Test Black - well-formatted code passes
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create well-formatted Python file
+        run: |
+          mkdir -p /tmp/black-test-pass
+          cat > /tmp/black-test-pass/good.py << 'EOF'
+          x = 1
+          y = 2
+          z = x + y
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          options: "--check"
+          src: "/tmp/black-test-pass/good.py"
+          version: "25.1.0"
+          summary: "false"
+
+      - name: Assert action succeeded
+        run: |
+          echo "Black check passed on well-formatted code"
+          echo "PASS"

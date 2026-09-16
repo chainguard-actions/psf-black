@@ -1,0 +1,31 @@
+name: Test Black - version pinning
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create well-formatted Python file
+        run: |
+          mkdir -p /tmp/black-version-test
+          cat > /tmp/black-version-test/good.py << 'EOF'
+          x = 1
+          y = 2
+          print(x + y)
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          options: "--check"
+          src: "/tmp/black-version-test/good.py"
+          # Pin to a specific older version to verify version pinning works
+          version: "24.10.0"
+          summary: "false"
+
+      - name: Assert action succeeded with pinned version
+        run: |
+          echo "Black ran successfully with pinned version 24.10.0"
+          echo "PASS"

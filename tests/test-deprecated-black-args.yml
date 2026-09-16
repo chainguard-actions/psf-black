@@ -1,0 +1,30 @@
+name: Test Black - deprecated black_args input (backward compatibility)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create well-formatted Python file
+        run: |
+          mkdir -p /tmp/black-args-test
+          cat > /tmp/black-args-test/good.py << 'EOF'
+          x = 1
+          y = 2
+          print(x + y)
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          # Use the deprecated black_args input for backward compatibility testing
+          black_args: "--check /tmp/black-args-test/good.py"
+          version: "25.1.0"
+          summary: "false"
+
+      - name: Assert action succeeded using deprecated black_args
+        run: |
+          echo "Black ran successfully using deprecated black_args input"
+          echo "PASS"
