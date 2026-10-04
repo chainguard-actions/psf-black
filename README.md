@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
+| 26.10.0 | [`26.10.0`](https://github.com/chainguard-actions/psf-black/tree/26.10.0) | [`4f1883b`](https://github.com/psf/black/commit/4f1883b1f15305a0e83a7c87991f46292bf09f85) |
 | 26.3.1 | [`26.3.1`](https://github.com/chainguard-actions/psf-black/tree/26.3.1) | [`c6755bb`](https://github.com/psf/black/commit/c6755bb741b6481d6b3d3bb563c83fa060db96c9) |
 | 26.5.1 | [`26.5.1`](https://github.com/chainguard-actions/psf-black/tree/26.5.1) | [`87928e6`](https://github.com/psf/black/commit/87928e6d6761a4a6d22250e1fee5601b3998086e) |
 
