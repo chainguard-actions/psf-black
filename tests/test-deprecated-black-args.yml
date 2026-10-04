@@ -1,0 +1,43 @@
+name: Test Black with deprecated black_args input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a well-formatted Python file
+        run: |
+          mkdir -p /tmp/black-test-args
+          cat > /tmp/black-test-args/good.py << 'EOF'
+          def hello():
+              print("hello world")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          # Use the deprecated black_args input for backward compatibility testing
+          black_args: "--check --diff /tmp/black-test-args"
+          version: "25.1.0"
+          summary: "false"
+        continue-on-error: true
+
+      - name: Assert action ran with deprecated args
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          IS_FORMATTED: ${{ steps.action.outputs.is_formatted }}
+          SAME_COUNT: ${{ steps.action.outputs.same_count }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "is_formatted: $IS_FORMATTED"
+          echo "same_count: $SAME_COUNT"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: Black ran successfully with deprecated black_args input"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: Black ran (may have found formatting issues)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

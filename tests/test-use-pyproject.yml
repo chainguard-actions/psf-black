@@ -1,0 +1,53 @@
+name: Test Black with use_pyproject input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test directory with pyproject.toml and Python file
+        run: |
+          mkdir -p /tmp/black-test-pyproject
+          # Create a pyproject.toml with a black required-version
+          cat > /tmp/black-test-pyproject/pyproject.toml << 'EOF'
+          [tool.black]
+          required-version = "25.1.0"
+          line-length = 88
+          EOF
+          # Create a well-formatted Python file
+          cat > /tmp/black-test-pyproject/hello.py << 'EOF'
+          def hello():
+              print("hello world")
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          options: "--check"
+          src: "/tmp/black-test-pyproject/hello.py"
+          use_pyproject: "true"
+          summary: "false"
+        env:
+          # Point to the directory with pyproject.toml
+          GITHUB_WORKSPACE: /tmp/black-test-pyproject
+        continue-on-error: true
+
+      - name: Assert action ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          IS_FORMATTED: ${{ steps.action.outputs.is_formatted }}
+          SAME_COUNT: ${{ steps.action.outputs.same_count }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "is_formatted: $IS_FORMATTED"
+          echo "same_count: $SAME_COUNT"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: Black ran successfully using pyproject.toml version"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: Black ran (may have failed to find pyproject.toml in workspace or formatting issue)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

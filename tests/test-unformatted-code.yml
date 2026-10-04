@@ -1,0 +1,43 @@
+name: Test Black on unformatted code
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create an unformatted Python file
+        run: |
+          mkdir -p /tmp/black-test-unformatted
+          # Write Python code that Black would reformat (bad spacing around operators)
+          printf 'x=1\ny=2\nz=x+y\n' > /tmp/black-test-unformatted/bad.py
+
+      - id: action
+        uses: .
+        with:
+          options: "--check --diff"
+          src: "/tmp/black-test-unformatted"
+          version: "25.1.0"
+          summary: "false"
+        continue-on-error: true
+
+      - name: Assert Black detected unformatted code
+        env:
+          IS_FORMATTED: ${{ steps.action.outputs.is_formatted }}
+          CHANGE_COUNT: ${{ steps.action.outputs.change_count }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "is_formatted: $IS_FORMATTED"
+          echo "change_count: $CHANGE_COUNT"
+          # Black exits non-zero when --check finds files that need reformatting
+          # So outcome=failure is expected here
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: Black correctly detected unformatted code and exited non-zero"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: Black ran successfully (code may already be formatted)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

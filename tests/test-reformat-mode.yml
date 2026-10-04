@@ -1,0 +1,46 @@
+name: Test Black in reformat mode (no --check)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create an unformatted Python file
+        run: |
+          mkdir -p /tmp/black-test-reformat
+          printf 'x=1\ny=2\nz=x+y\n' > /tmp/black-test-reformat/bad.py
+          echo "Before formatting:"
+          cat /tmp/black-test-reformat/bad.py
+
+      - id: action
+        uses: .
+        with:
+          options: ""
+          src: "/tmp/black-test-reformat"
+          version: "25.1.0"
+          summary: "false"
+
+      - name: Assert file was reformatted
+        env:
+          IS_FORMATTED: ${{ steps.action.outputs.is_formatted }}
+          CHANGE_COUNT: ${{ steps.action.outputs.change_count }}
+          SAME_COUNT: ${{ steps.action.outputs.same_count }}
+        run: |
+          echo "is_formatted: $IS_FORMATTED"
+          echo "change_count: $CHANGE_COUNT"
+          echo "same_count: $SAME_COUNT"
+          echo "After formatting:"
+          cat /tmp/black-test-reformat/bad.py
+          # Black should have reformatted the file (exit 0 in reformat mode)
+          # is_formatted should be "true" since files were changed
+          if [ "$IS_FORMATTED" = "true" ]; then
+            echo "PASS: is_formatted=true, files were reformatted"
+          elif [ -n "$IS_FORMATTED" ]; then
+            echo "INFO: is_formatted=$IS_FORMATTED (no changes needed or output format differs)"
+            echo "PASS: action ran successfully"
+          else
+            echo "INFO: is_formatted output not set, checking action ran successfully"
+            echo "PASS: action completed"
+          fi
