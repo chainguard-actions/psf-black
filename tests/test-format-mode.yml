@@ -1,0 +1,42 @@
+name: Test Black - format mode rewrites unformatted file
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure python3-venv is available
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y python3-venv
+
+      - name: Create an unformatted Python file
+        run: |
+          # Write a file with single quotes - Black will convert to double quotes
+          # Use /tmp/ to avoid picking up the action's own pyproject.toml
+          printf "x=1\nprint('hello world')\n" > /tmp/to_format.py
+          echo "Before formatting:"
+          cat /tmp/to_format.py
+
+      - id: action
+        uses: .
+        with:
+          # No --check: Black will reformat in place and exit 0
+          options: ""
+          src: "/tmp/to_format.py"
+          version: "24.10.0"
+          summary: "false"
+
+      - name: Assert action succeeded and file was reformatted
+        run: |
+          echo "After formatting:"
+          cat /tmp/to_format.py
+          # Black should have converted single quotes to double quotes
+          if grep -q '"hello world"' /tmp/to_format.py; then
+            echo "PASS: Black reformatted the file (single quotes converted to double quotes)"
+          else
+            echo "FAIL: expected Black to reformat the file with double quotes"
+            exit 1
+          fi

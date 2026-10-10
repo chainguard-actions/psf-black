@@ -1,0 +1,51 @@
+name: Test Black - output-file writes diff to file
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure python3-venv is available
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y python3-venv
+
+      - name: Create an unformatted Python file
+        run: |
+          # Write a file with bad formatting so Black produces a diff
+          # Use /tmp/ to avoid picking up the action's own pyproject.toml
+          printf "x=1\nprint('hello')\n" > /tmp/diff_target.py
+          echo "File contents:"
+          cat /tmp/diff_target.py
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          options: "--check --diff"
+          src: "/tmp/diff_target.py"
+          version: "24.10.0"
+          summary: "false"
+          output-file: "/tmp/black-output.txt"
+
+      - name: Assert output file was created and contains diff
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ ! -f "/tmp/black-output.txt" ]; then
+            echo "FAIL: output file /tmp/black-output.txt was not created"
+            exit 1
+          fi
+          echo "Output file contents:"
+          cat /tmp/black-output.txt
+          # The output file should contain diff markers or "would reformat"
+          if grep -qE "^---|^\+\+\+|would reformat|reformatted" /tmp/black-output.txt; then
+            echo "PASS: output file contains Black diff/check output"
+          else
+            echo "FAIL: output file does not contain expected diff content"
+            cat /tmp/black-output.txt
+            exit 1
+          fi

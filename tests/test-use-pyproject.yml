@@ -1,0 +1,57 @@
+name: Test Black - use_pyproject reads version from pyproject.toml
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure Python 3.11+ and python3-venv are available
+        run: |
+          sudo apt-get update -q
+          python3 --version
+          # use_pyproject requires Python 3.11+
+          if python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)"; then
+            echo "Python 3.11+ already available: $(python3 --version)"
+            sudo apt-get install -y python3-venv
+          else
+            echo "Installing Python 3.11..."
+            sudo apt-get install -y python3.11 python3.11-venv
+            sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 100
+            sudo update-alternatives --set python3 /usr/bin/python3.11
+            echo "Python version: $(python3 --version)"
+          fi
+
+      - name: Create pyproject.toml at workspace root and a formatted Python file
+        run: |
+          # Remove any existing pyproject.toml (may be a symlink to the action source)
+          rm -f "$GITHUB_WORKSPACE/pyproject.toml"
+
+          # Create a pyproject.toml specifying Black version via required-version
+          # Use printf to avoid YAML heredoc issues
+          printf '[tool.black]\nrequired-version = "24.10.0"\n' > "$GITHUB_WORKSPACE/pyproject.toml"
+
+          echo "pyproject.toml contents:"
+          cat "$GITHUB_WORKSPACE/pyproject.toml"
+
+          # Create a properly formatted Python file in /tmp/ to avoid config interference
+          printf 'x = 1\nprint("hello")\n' > /tmp/pyproject_test.py
+          echo "Python file contents:"
+          cat /tmp/pyproject_test.py
+
+      - id: action
+        uses: .
+        with:
+          options: "--check"
+          src: "/tmp/pyproject_test.py"
+          use_pyproject: "true"
+          summary: "false"
+
+      - name: Cleanup pyproject.toml
+        if: always()
+        run: rm -f "$GITHUB_WORKSPACE/pyproject.toml"
+
+      - name: Assert action succeeded with version from pyproject.toml
+        run: |
+          echo "PASS: Black with use_pyproject successfully read version from pyproject.toml"

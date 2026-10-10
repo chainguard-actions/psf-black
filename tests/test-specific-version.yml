@@ -1,0 +1,34 @@
+name: Test Black - specific version installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure python3-venv is available
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y python3-venv
+
+      - name: Create a properly formatted Python file
+        run: |
+          # A simple, already-formatted Python file
+          # Use /tmp/ to avoid picking up the action's own pyproject.toml
+          printf 'x = 1\ny = 2\nprint("hello")\n' > /tmp/versioned.py
+          echo "File contents:"
+          cat /tmp/versioned.py
+
+      - id: action
+        uses: .
+        with:
+          options: "--check"
+          src: "/tmp/versioned.py"
+          # Test with a known stable version of Black
+          version: "24.10.0"
+          summary: "false"
+
+      - name: Assert action succeeded with specific version
+        run: |
+          echo "PASS: Black version 24.10.0 successfully checked the file"

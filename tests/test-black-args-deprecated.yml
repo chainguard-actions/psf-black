@@ -1,0 +1,32 @@
+name: Test Black - deprecated black_args input still works
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure python3-venv is available
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y python3-venv
+
+      - name: Create a properly formatted Python file
+        run: |
+          # Use /tmp/ to avoid picking up the action's own pyproject.toml
+          printf 'x = 1\nprint("hello")\n' > /tmp/args_test.py
+          echo "File contents:"
+          cat /tmp/args_test.py
+
+      - id: action
+        uses: .
+        with:
+          # Use deprecated black_args input with --check and the file path
+          black_args: "--check /tmp/args_test.py"
+          version: "24.10.0"
+          summary: "false"
+
+      - name: Assert action succeeded using deprecated black_args
+        run: |
+          echo "PASS: Black check passed using deprecated black_args input"
